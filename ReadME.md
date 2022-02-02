@@ -2,7 +2,7 @@
 
 ## Description
 
-- Developer project to display a single restaurant's information and marker using the Google Maps Api and NodeJs
+- Developer project to display a single restaurant's information and marker using the Google Maps Api and NodeJs, click on the markers to reveal a sidebar info panel that displays information about the location.
 
 ## Technologies Used
 - NodeJs
