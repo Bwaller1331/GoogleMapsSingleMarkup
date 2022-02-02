@@ -13,7 +13,7 @@
 ## How to Run
 Run these in a terminal window
 ```
-git clone https://github.com/Bwaller1331/GoogleMapsNearby.git
+git clone https://github.com/Bwaller1331/GoogleMapsSingleMarkup.git
 
 cd GoogleMapsNearby
 
