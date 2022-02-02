@@ -1,121 +1,71 @@
-let pos;
+let pos = {
+  lat:40.14237372290742,
+  lng: -82.9794526403665,
+};
 let map;
 let bounds;
 let infoWindow;
 let currentInfoWindow;
 let service;
-let infoPane;
+let infopane;
+
+
+// Initialize map and locate restaurant based on query
 function initMap() {
  
   bounds = new google.maps.LatLngBounds();
-  infoWindow = new google.maps.InfoWindow;
+  infowindow = new google.maps.InfoWindow();
   currentInfoWindow = infoWindow;
-  
   infoPane = document.getElementById('panel');
 
-  // HTML5 geolocation
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(position => {
-      pos = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
-      };
-      map = new google.maps.Map(document.getElementById('map'), {
-        center: pos,
-        zoom: 10
-      });
-      bounds.extend(pos);
+  map = new google.maps.Map(
+      document.getElementById('map'), {center: pos, zoom: 15});
 
-      infoWindow.setPosition(pos);
-      infoWindow.setContent('Location found.');
-      infoWindow.open(map);
-      map.setCenter(pos);
+  var request = {
+    query: "BJ's Restaurant & Brewhouse",
 
-      // Call Places Nearby Search on user's location
-      getNearbyPlaces(pos);
-    }, () => {
-      // Browser supports geolocation, but user has denied permission
-      handleLocationError(true, infoWindow);
-    });
-  } else {
-    // Browser doesn't support geolocation
-    handleLocationError(false, infoWindow);
-  }
-}
-
-// Handle a geolocation error
-function handleLocationError(browserHasGeolocation, infoWindow) {
-  // Set default location to Sydney, Australia
-  pos = { lat: -33.856, lng: 151.215 };
-  map = new google.maps.Map(document.getElementById('map'), {
-    center: pos,
-    zoom: 15
-  });
-
-  // Display an InfoWindow at the map center
-  infoWindow.setPosition(pos);
-  infoWindow.setContent(browserHasGeolocation ?
-    'Geolocation permissions denied. Using default location.' :
-    'Error: Your browser doesn\'t support geolocation.');
-  infoWindow.open(map);
-  currentInfoWindow = infoWindow;
-
-  // Call Places Nearby Search on the default location
-  getNearbyPlaces(pos);
-}
-
-// Perform a Places Nearby Search Request
-function getNearbyPlaces(position) {
-  let request = {
-    location: position,
-    rankBy: google.maps.places.RankBy.DISTANCE,
-    keyword: 'restaurant',
+    fields: ['name', 'geometry', "place_id"],
   };
 
   service = new google.maps.places.PlacesService(map);
-  service.nearbySearch(request, nearbyCallback);
+
+  service.findPlaceFromQuery(request, function(results, status) {
+    if (status === google.maps.places.PlacesServiceStatus.OK) {
+      for (var i = 0; i < results.length; i++) {
+        createMarker(results[i]);
+      }
+      map.setCenter(results[0].geometry.location);
+    }
+  });
+  
 }
 
-// Handle the results (up to 20) of the Nearby Search
-function nearbyCallback(results, status) {
-  if (status == google.maps.places.PlacesServiceStatus.OK) {
-    createMarkers(results);
-  }
-}
+function createMarker(place) {
+  service = new google.maps.places.PlacesService(map);
 
-// Set markers at the location of each place result
-function createMarkers(places) {
-  places.forEach(place => {
-    let marker = new google.maps.Marker({
-      position: place.geometry.location,
-      map: map,
-      title: place.name
-    });
+  let marker = new google.maps.Marker({
+    map,
+    position: place.geometry.location,
+    title:place.name,
+  });
 
-   
-    // Add click listener to each marker
-    google.maps.event.addListener(marker, 'click', () => {
+  google.maps.event.addListener(marker, "click", () => {
+         
       let request = {
         placeId: place.place_id,
         fields: ['name', 'formatted_address', 'geometry', 'rating',
           'website', 'photos', ]
-      };
-
-      /* Only fetch the details of a place when the user clicks on a marker.
-       * If we fetch the details for all place results as soon as we get
-       * the search response, we will hit API rate limits. */
+      }
       service.getDetails(request, (placeResult, status) => {
         showDetails(placeResult, marker, status)
       });
     });
 
-    // Adjust the map bounds to include the location of this marker
-    bounds.extend(place.geometry.location);
-  });
-  /* Once all the markers have been placed, adjust the bounds of the map to
-   * show all the markers within the visible area. */
-  map.fitBounds(bounds);
-}
+   
+
+  };
+
+
 
 
 // Builds an InfoWindow to display details above the marker
@@ -127,8 +77,8 @@ function showDetails(placeResult, marker, status) {
     placeInfowindow.setContent('<div><strong>' + placeResult.name +
       '</strong><br>' + 'Rating: ' + rating + '</div>');
     placeInfowindow.open(marker.map, marker);
-    currentInfoWindow.close();
     currentInfoWindow = placeInfowindow;
+    currentInfoWindow.close();
     showPanel(placeResult);
   } else {
     console.log('showDetails failed: ' + status);
